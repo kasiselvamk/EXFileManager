@@ -3,6 +3,7 @@ package com.ex.file.manager;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -18,6 +19,8 @@ public class Worker<MyStatus> implements Callable<MyStatus> {
 
     protected static String catchCompany = null;
     protected static String[] header = null ;
+    protected static CSVFormat  wthHeader =null, withoutHeader = null;
+    protected static ArrayList<String> list = new ArrayList<String>();
     
     public static void setSourceFile(String sourceFile) {
 		Worker.sourceFile = sourceFile;
@@ -46,14 +49,15 @@ public class Worker<MyStatus> implements Callable<MyStatus> {
 			if(header == null) {
 				String headerStr = ( record.toString().split("mapping=")[1].split(", recordNumber")[0] );
 				header = setHeader(headerStr);
-				System.out.println(headerStr);	
-				System.out.println(header);
+				wthHeader = CSVFormat.EXCEL.withHeader(header);
+				withoutHeader = CSVFormat.EXCEL;
 			}
 
 			if(!record.get(0).equalsIgnoreCase(catchCompany)) {
 				if(printer!=null)printer.close(Boolean.TRUE);
-				catchCompany = record.get(0);
-				printer = new CSVPrinter(new FileWriter(OutFolder+"/"+catchCompany+".csv"), CSVFormat.EXCEL.withHeader(header));
+				catchCompany = record.get(0); 
+				printer = new CSVPrinter(new FileWriter(OutFolder+"/"+catchCompany+".csv",Boolean.TRUE), list.contains(catchCompany) ?  withoutHeader : wthHeader );
+				list.add(catchCompany);
 			}			
 			if(printer!=null) printer.printRecord(record); 
 		}
@@ -69,6 +73,7 @@ public class Worker<MyStatus> implements Callable<MyStatus> {
 
 		} catch (Exception e) {
 			s.setError(Boolean.TRUE);
+			e.printStackTrace();
 		}
 		return   (MyStatus) s;
 	}
@@ -83,6 +88,7 @@ public class Worker<MyStatus> implements Callable<MyStatus> {
 	        	 strArr[i++]  = data.split("=")[0].trim();
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			 throw e;
 		}
 		return  strArr;
